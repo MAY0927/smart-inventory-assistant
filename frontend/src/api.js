@@ -19,3 +19,18 @@ export async function createItem(item) {
   if (!response.ok) throw new Error(`Unable to create item (${response.status})`);
   return response.json();
 }
+
+export async function updateItem(id, item) {
+  const response = await fetch(`${API_URL}/items/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(item),
+  });
+  if (!response.ok) throw new Error(`Unable to update item (${response.status})`);
+  return response.json();
+}
+
+export async function deleteItem(id) {
+  const response = await fetch(`${API_URL}/items/${id}`, { method: "DELETE" });
+  if (!response.ok) throw new Error(`Unable to delete item (${response.status})`);
+}

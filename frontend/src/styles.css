@@ -38,7 +38,9 @@ nav a.active { color: white; background: #2b5a4e; font-weight: 700; }
 .item-image.pink { background: #f8eae7; }.item-image.green { background: #e7f2e8; }
 .item-info { padding: 15px; }.item-heading { display: flex; align-items: center; justify-content: space-between; }
 .category { color: #34775e; font-size: 11px; font-weight: 800; }
-.item-heading button { border: 0; color: #89938e; background: transparent; letter-spacing: 1px; }
+.item-heading button { width: 27px; height: 27px; border: 0; border-radius: 7px; color: #6f7e76; background: transparent; font-size: 17px; }
+.item-heading button:hover { color: #255f49; background: #edf5f1; }.card-actions { display: flex; gap: 2px; }
+.card-actions button:last-child:hover { color: #a94738; background: #fff0ed; }
 .item-card h2 { margin: 7px 0 5px; font-size: 16px; }
 .item-card p { min-height: 18px; margin: 0 0 16px; color: #859089; font-size: 11px; }
 .quantity { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid #edf0ee; color: #7a857f; font-size: 11px; }
