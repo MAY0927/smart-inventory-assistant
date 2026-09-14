@@ -20,7 +20,7 @@ function ItemCard({ item, index, onEdit, onDelete }) {
 }
 
 function AddItemModal({ onClose, onCreated }) {
-  const [form, setForm] = useState({ name: "", category: "衣物", quantity: 1, notes: "" });
+  const [form, setForm] = useState({ name: "", category: "衣物", quantity: 1, notes: "", color: "", style: "", material: "", purpose: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -31,7 +31,8 @@ function AddItemModal({ onClose, onCreated }) {
   async function handleSubmit(event) {
     event.preventDefault(); setSubmitting(true); setError("");
     try {
-      await createItem({ ...form, name: form.name.trim(), quantity: Number(form.quantity), notes: form.notes.trim() || null, attributes: {} });
+      const attributes = Object.fromEntries(["color", "style", "material", "purpose"].filter((key) => form[key].trim()).map((key) => [key, form[key].trim()]));
+      await createItem({ name: form.name.trim(), category: form.category, quantity: Number(form.quantity), notes: form.notes.trim() || null, attributes });
       onCreated();
     } catch {
       setError("新增失敗，請確認後端服務是否正常運作。"); setSubmitting(false);
@@ -48,6 +49,12 @@ function AddItemModal({ onClose, onCreated }) {
             <label>分類<select name="category" value={form.category} onChange={updateField}><option>衣物</option><option>鞋子</option><option>日用品</option><option>食品</option><option>其他</option></select></label>
             <label>數量<input name="quantity" value={form.quantity} onChange={updateField} type="number" min="0" required /></label>
           </div>
+          <div className="feature-grid">
+            <label>顏色<input name="color" value={form.color} onChange={updateField} placeholder="黃色" /></label>
+            <label>風格<input name="style" value={form.style} onChange={updateField} placeholder="休閒" /></label>
+            <label>材質<input name="material" value={form.material} onChange={updateField} placeholder="棉" /></label>
+            <label>用途<input name="purpose" value={form.purpose} onChange={updateField} placeholder="日常" /></label>
+          </div>
           <label>備註（選填）<textarea name="notes" value={form.notes} onChange={updateField} maxLength="2000" placeholder="顏色、用途或其他說明…" rows="3" /></label>
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="form-actions"><button className="secondary-button" onClick={onClose} type="button">取消</button><button className="primary-button" disabled={submitting} type="submit">{submitting ? "新增中…" : "新增物品"}</button></div>
@@ -58,14 +65,15 @@ function AddItemModal({ onClose, onCreated }) {
 }
 
 function EditItemModal({ item, onClose, onSaved }) {
-  const [form, setForm] = useState({ name: item.name, category: item.category, quantity: item.quantity, notes: item.notes || "" });
+  const [form, setForm] = useState({ name: item.name, category: item.category, quantity: item.quantity, notes: item.notes || "", color: item.attributes?.color || "", style: item.attributes?.style || "", material: item.attributes?.material || "", purpose: item.attributes?.purpose || "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(event) {
     event.preventDefault(); setSubmitting(true); setError("");
     try {
-      await updateItem(item.id, { ...form, name: form.name.trim(), quantity: Number(form.quantity), notes: form.notes.trim() || null });
+      const attributes = Object.fromEntries(["color", "style", "material", "purpose"].filter((key) => form[key].trim()).map((key) => [key, form[key].trim()]));
+      await updateItem(item.id, { name: form.name.trim(), category: form.category, quantity: Number(form.quantity), notes: form.notes.trim() || null, attributes });
       onSaved();
     } catch {
       setError("儲存失敗，請稍後再試。"); setSubmitting(false);
@@ -81,6 +89,12 @@ function EditItemModal({ item, onClose, onSaved }) {
           <div className="form-row">
             <label>分類<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>衣物</option><option>鞋子</option><option>日用品</option><option>食品</option><option>其他</option></select></label>
             <label>數量<input value={form.quantity} onChange={(event) => setForm({ ...form, quantity: event.target.value })} type="number" min="0" required /></label>
+          </div>
+          <div className="feature-grid">
+            <label>顏色<input value={form.color} onChange={(event) => setForm({ ...form, color: event.target.value })} placeholder="黃色" /></label>
+            <label>風格<input value={form.style} onChange={(event) => setForm({ ...form, style: event.target.value })} placeholder="休閒" /></label>
+            <label>材質<input value={form.material} onChange={(event) => setForm({ ...form, material: event.target.value })} placeholder="棉" /></label>
+            <label>用途<input value={form.purpose} onChange={(event) => setForm({ ...form, purpose: event.target.value })} placeholder="日常" /></label>
           </div>
           <label>備註（選填）<textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} maxLength="2000" rows="3" /></label>
           {error && <p className="form-error" role="alert">{error}</p>}
