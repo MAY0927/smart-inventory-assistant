@@ -34,3 +34,13 @@ export async function deleteItem(id) {
   const response = await fetch(`${API_URL}/items/${id}`, { method: "DELETE" });
   if (!response.ok) throw new Error(`Unable to delete item (${response.status})`);
 }
+
+export async function evaluatePurchase(candidate) {
+  const response = await fetch(`${API_URL}/purchase-evaluations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(candidate),
+  });
+  if (!response.ok) throw new Error(`Unable to evaluate purchase (${response.status})`);
+  return response.json();
+}
