@@ -9,3 +9,13 @@ export async function fetchItems({ search = "", category = "all", signal } = {})
   if (!response.ok) throw new Error(`Unable to load items (${response.status})`);
   return response.json();
 }
+
+export async function createItem(item) {
+  const response = await fetch(`${API_URL}/items`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(item),
+  });
+  if (!response.ok) throw new Error(`Unable to create item (${response.status})`);
+  return response.json();
+}

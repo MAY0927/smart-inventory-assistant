@@ -3,6 +3,7 @@
 body { margin: 0; min-width: 320px; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
+button:disabled { cursor: wait; opacity: .65; }
 .app-shell { display: flex; min-height: 100vh; }
 .sidebar { position: fixed; inset: 0 auto 0 0; width: 245px; padding: 30px 20px; display: flex; flex-direction: column; background: #173e35; color: white; }
 .brand { padding: 0 10px 36px; font-size: 20px; font-weight: 800; letter-spacing: -.3px; }
@@ -46,6 +47,15 @@ nav a.active { color: white; background: #2b5a4e; font-weight: 700; }
 .state-message strong { color: #34423a; font-size: 16px; }
 .state-message span { font-size: 13px; }
 .state-message.error { min-height: 90px; border-color: #edcbc3; color: #a64d3d; background: #fff8f6; }
+.modal-backdrop { position: fixed; z-index: 10; inset: 0; display: grid; place-items: center; padding: 20px; background: #102a237a; backdrop-filter: blur(3px); }
+.modal { width: min(520px, 100%); padding: 25px; border-radius: 17px; background: white; box-shadow: 0 24px 70px #14261f45; }
+.modal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; }
+.modal-header h2 { margin: 0; font-size: 25px; }.close-button { border: 0; color: #6d7a73; background: transparent; font-size: 28px; line-height: 1; }
+.modal form, .modal label { display: grid; gap: 8px; }.modal form { gap: 17px; }.modal label { color: #45524b; font-size: 13px; font-weight: 700; }
+.modal input, .modal select, .modal textarea { width: 100%; padding: 11px 12px; border: 1px solid #d9e2dd; border-radius: 9px; outline: none; color: #1e2b25; background: #fbfcfb; resize: vertical; }
+.modal input:focus, .modal select:focus, .modal textarea:focus { border-color: #4b9679; box-shadow: 0 0 0 3px #4b967917; }
+.form-row { display: grid; grid-template-columns: 2fr 1fr; gap: 13px; }.form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 3px; }
+.secondary-button { padding: 12px 18px; border: 1px solid #d8e1dc; border-radius: 10px; color: #506058; background: white; font-weight: 700; }.form-error { margin: 0; color: #ad4939; font-size: 13px; }
 @media (max-width: 1050px) { .item-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 720px) {
   .sidebar { position: static; width: 100%; padding: 18px; }.sidebar nav { grid-template-columns: repeat(3, 1fr); }
