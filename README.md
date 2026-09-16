@@ -4,6 +4,20 @@
 
 STOW is a personal inventory and purchase-decision assistant that helps people avoid duplicate purchases and notice low-stock items before they run out. It combines a clear inventory workspace with an explainable similarity score, so every recommendation shows exactly how it was calculated.
 
+## Product preview
+
+### One clear inventory view
+
+![STOW inventory dashboard](docs/screenshots/inventory-dashboard.png)
+
+### A purchase decision you can understand
+
+![STOW Purchase Check showing a 100 percent match](docs/screenshots/purchase-check.png)
+
+### A focused restock queue
+
+![STOW Restock queue all-clear state](docs/screenshots/restock-all-clear.png)
+
 ## Why STOW?
 
 People often buy something and later realize they already own a similar item. They also discover that everyday supplies are empty only when they need them. Existing inventory tools record possessions, but recording alone does not help with the next decision.
