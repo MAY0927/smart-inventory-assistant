@@ -108,6 +108,11 @@ function ItemCard({ item, index, onEdit, onDelete }) {
   );
 }
 
+function getRestockThreshold(item) {
+  const value = Number(item.attributes?.restock_threshold ?? 1);
+  return Number.isFinite(value) && value >= 0 ? value : 1;
+}
+
 function ItemModal({ item, onClose, onSaved }) {
   const editing = Boolean(item);
   const [form, setForm] = useState({
@@ -119,6 +124,7 @@ function ItemModal({ item, onClose, onSaved }) {
     style: item?.attributes?.style || "",
     material: item?.attributes?.material || "",
     purpose: item?.attributes?.purpose || "",
+    restockThreshold: item?.attributes?.restock_threshold ?? 1,
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -134,6 +140,7 @@ function ItemModal({ item, onClose, onSaved }) {
     const attributes = Object.fromEntries(
       FEATURE_KEYS.filter((key) => form[key].trim()).map((key) => [key, form[key].trim()]),
     );
+    attributes.restock_threshold = Number(form.restockThreshold);
     const payload = {
       name: form.name.trim(),
       category: form.category,
@@ -167,6 +174,7 @@ function ItemModal({ item, onClose, onSaved }) {
             <label>Category<select name="category" onChange={updateField} value={form.category}>{CATEGORIES.map((value) => <option key={value}>{value}</option>)}</select></label>
             <label>Quantity<input min="0" name="quantity" onChange={updateField} required type="number" value={form.quantity} /></label>
           </div>
+          <label>Restock threshold<input min="0" name="restockThreshold" onChange={updateField} required type="number" value={form.restockThreshold} /><small>Show this item in Restock when its quantity reaches this number.</small></label>
           <div className="feature-grid">
             <label>Color<input name="color" onChange={updateField} placeholder="Yellow" value={form.color} /></label>
             <label>Style<input name="style" onChange={updateField} placeholder="Casual" value={form.style} /></label>
@@ -182,6 +190,56 @@ function ItemModal({ item, onClose, onSaved }) {
             </button>
           </div>
         </form>
+      </section>
+    </div>
+  );
+}
+
+function RestockModal({ items, onClose, onUpdated }) {
+  const [updatingId, setUpdatingId] = useState(null);
+  const [error, setError] = useState("");
+  const restockItems = items
+    .filter((item) => item.quantity <= getRestockThreshold(item))
+    .sort((a, b) => a.quantity - b.quantity);
+
+  async function addOne(item) {
+    setUpdatingId(item.id);
+    setError("");
+    try {
+      await updateItem(item.id, { quantity: item.quantity + 1 });
+      onUpdated();
+    } catch {
+      setError("We could not update this item. Check that the API is running.");
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()} role="presentation">
+      <section aria-labelledby="restock-title" aria-modal="true" className="modal restock-modal" role="dialog">
+        <header className="modal-header">
+          <div>
+            <p className="eyebrow">RESTOCK QUEUE</p>
+            <h2 id="restock-title">What needs attention?</h2>
+            <p>Items appear here when their quantity reaches the threshold you set.</p>
+          </div>
+          <button aria-label="Close" className="close-button" onClick={onClose} type="button"><Icon name="close" /></button>
+        </header>
+        {error && <p className="form-error" role="alert">{error}</p>}
+        {restockItems.length === 0 ? (
+          <div className="restock-empty"><span>ALL CLEAR</span><strong>Your inventory is above every restock threshold.</strong><p>Edit an item to customize when it should appear here.</p></div>
+        ) : (
+          <div className="restock-list">
+            {restockItems.map((item) => (
+              <article key={item.id}>
+                <div><span>{normalizeCategory(item.category)}</span><h3>{item.name}</h3><p>Threshold {getRestockThreshold(item)}</p></div>
+                <div className="restock-count"><small>IN STOCK</small><strong>{item.quantity}</strong></div>
+                <button className="secondary-button" disabled={updatingId === item.id} onClick={() => addOne(item)} type="button">{updatingId === item.id ? "Updating..." : "+ Add one"}</button>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
@@ -298,6 +356,7 @@ export function App() {
   const [status, setStatus] = useState("loading");
   const [itemModal, setItemModal] = useState(null);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [restockOpen, setRestockOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -323,6 +382,10 @@ export function App() {
     setReloadKey((key) => key + 1);
   }
 
+  function handleRestockUpdated() {
+    setReloadKey((key) => key + 1);
+  }
+
   async function handleDelete(item) {
     if (!window.confirm(`Delete "${item.name}" from your inventory?`)) return;
     try {
@@ -337,7 +400,7 @@ export function App() {
     () => ({
       totalQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
       categories: new Set(items.map((item) => normalizeCategory(item.category))).size,
-      lowStock: items.filter((item) => item.quantity <= 1).length,
+      lowStock: items.filter((item) => item.quantity <= getRestockThreshold(item)).length,
     }),
     [items],
   );
@@ -349,7 +412,7 @@ export function App() {
         <nav aria-label="Primary navigation">
           <a className="active" href="#inventory"><Icon name="box" />Inventory</a>
           <button onClick={() => setPurchaseOpen(true)} type="button"><Icon name="compare" />Purchase check</button>
-          <a href="#restock"><Icon name="clock" />Restock</a>
+          <button onClick={() => setRestockOpen(true)} type="button"><Icon name="clock" />Restock</button>
         </nav>
         <div className="sidebar-tip"><small>THE PRINCIPLE</small><p>Know what you own.<br />Buy only what you need.</p></div>
       </aside>
@@ -368,7 +431,7 @@ export function App() {
 
         <section aria-label="Inventory summary" className="stats">
           <article><span>Total units</span><strong>{stats.totalQuantity}</strong><small>Across {stats.categories} categories</small></article>
-          <article><span>Low stock</span><strong>{stats.lowStock}</strong><small className="warning">One unit or less</small></article>
+          <article><span>Restock queue</span><strong>{stats.lowStock}</strong><small className="warning">At or below item threshold</small></article>
           <article><span>Unique items</span><strong>{items.length}</strong><small>Synced with PostgreSQL</small></article>
         </section>
 
@@ -395,6 +458,7 @@ export function App() {
 
       {itemModal && <ItemModal item={itemModal.mode === "edit" ? itemModal.item : null} onClose={() => setItemModal(null)} onSaved={handleSaved} />}
       {purchaseOpen && <PurchaseModal onClose={() => setPurchaseOpen(false)} />}
+      {restockOpen && <RestockModal items={items} onClose={() => setRestockOpen(false)} onUpdated={handleRestockUpdated} />}
     </div>
   );
 }
