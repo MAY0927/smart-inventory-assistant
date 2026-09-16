@@ -168,6 +168,11 @@ button:disabled { cursor: wait; opacity: .55; }
   gap: 9px;
 }
 
+.add-button {
+  min-width: 148px;
+  white-space: nowrap;
+}
+
 .stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
