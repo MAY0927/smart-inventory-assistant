@@ -77,11 +77,20 @@ def find_most_similar(
 def build_recommendation(result: SimilarityResult) -> tuple[str, str]:
     if result.score >= 70:
         decision = "skip"
-        explanation = f"庫存中的「{result.item_name}」相似度為 {result.score}%，建議先使用現有物品。"
+        explanation = (
+            f'"{result.item_name}" is a {result.score}% match. '
+            "Use what you already own before buying another."
+        )
     elif result.score >= 40:
         decision = "consider"
-        explanation = f"庫存中的「{result.item_name}」相似度為 {result.score}%，購買前可再比較用途與價格。"
+        explanation = (
+            f'"{result.item_name}" is a {result.score}% match. '
+            "Compare purpose, quality, and price before deciding."
+        )
     else:
         decision = "buy"
-        explanation = "目前庫存沒有高度相似的物品，可以依照需求考慮購買。"
+        explanation = (
+            "Nothing in your inventory is a close match. "
+            "This purchase may fill a genuine gap."
+        )
     return decision, explanation
