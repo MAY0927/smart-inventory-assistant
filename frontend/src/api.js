@@ -44,3 +44,17 @@ export async function evaluatePurchase(candidate) {
   if (!response.ok) throw new Error(`Unable to evaluate purchase (${response.status})`);
   return response.json();
 }
+
+export async function analyzeItemImage(image) {
+  const body = new FormData();
+  body.append("image", image);
+  const response = await fetch(`${API_URL}/image-intake/analyze`, {
+    method: "POST",
+    body,
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || `Unable to analyze image (${response.status})`);
+  }
+  return response.json();
+}

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers.items import router as items_router
+from app.routers.image_intake import router as image_intake_router
 from app.routers.purchase_evaluations import router as purchase_evaluations_router
 
 app = FastAPI(
@@ -18,6 +19,7 @@ app.add_middleware(
 )
 
 app.include_router(items_router)
+app.include_router(image_intake_router)
 app.include_router(purchase_evaluations_router)
 
 

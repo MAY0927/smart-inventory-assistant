@@ -449,6 +449,40 @@ button:disabled { cursor: wait; opacity: .55; }
 
 .modal form { gap: 18px; }
 
+.image-intake {
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px 18px;
+  border: 1px solid #bfc1b8;
+  background: #eeeee7;
+}
+
+.image-intake > div { display: grid; gap: 5px; }
+.image-intake span { color: #6d7068; font: 500 9px "DM Mono", monospace; letter-spacing: .12em; }
+.image-intake strong { font-size: 16px; }
+.image-intake p { margin: 0; color: #74776e; font-size: 11px; line-height: 1.55; }
+
+.image-upload-button {
+  min-height: 40px;
+  padding: 0 14px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #191a17;
+  color: #fff !important;
+  background: #191a17;
+  font: 700 11px "Manrope", Arial, sans-serif !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  cursor: pointer;
+}
+
+.image-upload-button:hover { color: #191a17 !important; background: #cdf36f; }
+.image-upload-button input { display: none; }
+.selected-image { grid-column: 1 / -1; overflow: hidden; color: #555850; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+
 .modal label {
   color: #555850;
   font: 500 10px "DM Mono", monospace;
@@ -735,4 +769,5 @@ button:disabled { cursor: wait; opacity: .55; }
   .modal { padding: 22px; box-shadow: 7px 7px 0 #191a17; }
   .restock-list article { grid-template-columns: 1fr auto; }
   .restock-list article button { grid-column: 1 / -1; }
+  .image-intake { grid-template-columns: 1fr; }
 }
