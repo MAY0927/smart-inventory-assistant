@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  analyzeItemImage,
   createItem,
   deleteItem,
   evaluatePurchase,
@@ -127,10 +128,38 @@ function ItemModal({ item, onClose, onSaved }) {
     restockThreshold: item?.attributes?.restock_threshold ?? 1,
   });
   const [submitting, setSubmitting] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [imageName, setImageName] = useState("");
   const [error, setError] = useState("");
 
   function updateField(event) {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+  }
+
+  async function handleImage(event) {
+    const image = event.target.files?.[0];
+    if (!image) return;
+    setImageName(image.name);
+    setAnalyzing(true);
+    setError("");
+    try {
+      const analysis = await analyzeItemImage(image);
+      setForm((current) => ({
+        ...current,
+        name: analysis.name || current.name,
+        category: analysis.category || current.category,
+        color: analysis.color || "",
+        style: analysis.style || "",
+        material: analysis.material || "",
+        purpose: analysis.purpose || "",
+        notes: analysis.notes || current.notes,
+      }));
+    } catch (requestError) {
+      setError(requestError.message || "We could not analyze this image.");
+    } finally {
+      setAnalyzing(false);
+      event.target.value = "";
+    }
   }
 
   async function handleSubmit(event) {
@@ -169,6 +198,16 @@ function ItemModal({ item, onClose, onSaved }) {
           <button aria-label="Close" className="close-button" onClick={onClose} type="button"><Icon name="close" /></button>
         </header>
         <form onSubmit={handleSubmit}>
+          {!editing && (
+            <div className="image-intake">
+              <div><span>QUICK ADD WITH GEMINI</span><strong>Start with one photo</strong><p>Gemini will suggest the fields below. Review them before saving. The image is analyzed but not stored.</p></div>
+              <label className="image-upload-button">
+                {analyzing ? "Analyzing..." : imageName ? "Choose another" : "Choose image"}
+                <input accept="image/jpeg,image/png,image/webp" disabled={analyzing} onChange={handleImage} type="file" />
+              </label>
+              {imageName && <small className="selected-image">{imageName}</small>}
+            </div>
+          )}
           <label>Item name<input autoFocus maxLength="200" name="name" onChange={updateField} placeholder="e.g. Yellow summer dress" required value={form.name} /></label>
           <div className="form-row">
             <label>Category<select name="category" onChange={updateField} value={form.category}>{CATEGORIES.map((value) => <option key={value}>{value}</option>)}</select></label>
