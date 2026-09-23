@@ -1,5 +1,7 @@
 import httpx
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from app.dependencies import get_current_user
+from app.models.user import User
 
 from app.schemas.image_intake import ImageIntakeResult
 from app.services.gemini_image import analyze_inventory_image
@@ -12,7 +14,7 @@ MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
 
 @router.post("/analyze", response_model=ImageIntakeResult)
-async def analyze_image(image: UploadFile = File(...)) -> ImageIntakeResult:
+async def analyze_image(image: UploadFile = File(...), _user: User = Depends(get_current_user)) -> ImageIntakeResult:
     if image.content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,

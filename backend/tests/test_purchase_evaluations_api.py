@@ -10,11 +10,11 @@ from app.models.purchase_evaluation import PurchaseEvaluation
 client = TestClient(app)
 
 
-def test_purchase_evaluation_finds_similar_inventory_item() -> None:
+def test_purchase_evaluation_finds_similar_inventory_item(auth_headers) -> None:
     unique_name = f"Test yellow dress {uuid4()}"
     item_response = client.post(
         "/items",
-        json={
+        headers=auth_headers, json={
             "name": unique_name,
             "category": "clothing",
             "quantity": 1,
@@ -33,7 +33,7 @@ def test_purchase_evaluation_finds_similar_inventory_item() -> None:
     try:
         response = client.post(
             "/purchase-evaluations",
-            json={
+            headers=auth_headers, json={
                 "candidate_name": "Candidate yellow dress",
                 "candidate_category": "clothing",
                 "candidate_attributes": {
@@ -58,7 +58,7 @@ def test_purchase_evaluation_finds_similar_inventory_item() -> None:
             "purpose": 10,
         }
     finally:
-        client.delete(f"/items/{item_id}")
+        client.delete(f"/items/{item_id}", headers=auth_headers)
         if evaluation_id:
             with SessionLocal() as db:
                 evaluation = db.get(PurchaseEvaluation, UUID(evaluation_id))

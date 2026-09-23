@@ -8,11 +8,11 @@ from app.main import app
 client = TestClient(app)
 
 
-def test_items_crud_flow() -> None:
+def test_items_crud_flow(auth_headers) -> None:
     unique_name = f"Test item {uuid4()}"
     create_response = client.post(
         "/items",
-        json={
+        headers=auth_headers, json={
             "name": unique_name,
             "category": "test",
             "quantity": 2,
@@ -27,36 +27,36 @@ def test_items_crud_flow() -> None:
     assert created_item["quantity"] == 2
 
     try:
-        get_response = client.get(f"/items/{item_id}")
+        get_response = client.get(f"/items/{item_id}", headers=auth_headers)
         assert get_response.status_code == 200
         assert get_response.json()["id"] == item_id
 
-        list_response = client.get("/items", params={"search": unique_name})
+        list_response = client.get("/items", params={"search": unique_name}, headers=auth_headers)
         assert list_response.status_code == 200
         assert any(item["id"] == item_id for item in list_response.json())
 
         update_response = client.patch(
-            f"/items/{item_id}", json={"quantity": 3, "notes": None}
+            f"/items/{item_id}", json={"quantity": 3, "notes": None}, headers=auth_headers
         )
         assert update_response.status_code == 200
         assert update_response.json()["quantity"] == 3
         assert update_response.json()["notes"] is None
     finally:
-        delete_response = client.delete(f"/items/{item_id}")
+        delete_response = client.delete(f"/items/{item_id}", headers=auth_headers)
         assert delete_response.status_code == 204
 
-    missing_response = client.get(f"/items/{item_id}")
+    missing_response = client.get(f"/items/{item_id}", headers=auth_headers)
     assert missing_response.status_code == 404
 
 
-def test_create_item_rejects_invalid_quantity() -> None:
+def test_create_item_rejects_invalid_quantity(auth_headers) -> None:
     response = client.post(
         "/items",
-        json={"name": "Invalid item", "category": "test", "quantity": -1},
+        json={"name": "Invalid item", "category": "test", "quantity": -1}, headers=auth_headers,
     )
     assert response.status_code == 422
 
 
-def test_update_item_rejects_null_required_field() -> None:
-    response = client.patch(f"/items/{uuid4()}", json={"name": None})
+def test_update_item_rejects_null_required_field(auth_headers) -> None:
+    response = client.patch(f"/items/{uuid4()}", json={"name": None}, headers=auth_headers)
     assert response.status_code == 422
