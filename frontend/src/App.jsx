@@ -6,6 +6,8 @@ import {
   deleteItem,
   evaluatePurchase,
   fetchItems,
+  login,
+  setAccessToken,
   updateItem,
 } from "./api";
 import "./styles.css";
@@ -388,7 +390,50 @@ function PurchaseModal({ onClose }) {
   );
 }
 
+function LoginScreen({ onAuthenticated }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setSubmitting(true);
+    setError("");
+    try {
+      const user = await login(email.trim(), password);
+      sessionStorage.setItem("stow_user", JSON.stringify(user));
+      onAuthenticated(user);
+    } catch (requestError) {
+      setError(requestError.message || "Sign in failed.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <main className="login-page">
+      <section className="login-card">
+        <div className="brand login-brand"><span>ST</span><strong>STOW</strong></div>
+        <p className="eyebrow">PRIVATE INVENTORY</p>
+        <h1>Welcome back.</h1>
+        <p>Sign in to open your personal inventory.</p>
+        <form onSubmit={handleSubmit}>
+          <label>Email<input autoComplete="username" name="email" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} /></label>
+          <label>Password<input autoComplete="current-password" minLength="8" name="password" onChange={(event) => setPassword(event.target.value)} required type="password" value={password} /></label>
+          {error && <p className="form-error" role="alert">{error}</p>}
+          <button className="primary-button" disabled={submitting} type="submit">{submitting ? "Signing in..." : "Sign in"}</button>
+        </form>
+        <small>Access is limited to invited accounts.</small>
+      </section>
+    </main>
+  );
+}
+
 export function App() {
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem("stow_user")); } catch { return null; }
+  });
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
@@ -398,7 +443,20 @@ export function App() {
   const [restockOpen, setRestockOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
+  function logout() {
+    setAccessToken("");
+    sessionStorage.removeItem("stow_user");
+    setUser(null);
+    setItems([]);
+  }
+
   useEffect(() => {
+    window.addEventListener("stow:unauthorized", logout);
+    return () => window.removeEventListener("stow:unauthorized", logout);
+  }, []);
+
+  useEffect(() => {
+    if (!user) return undefined;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       setStatus("loading");
@@ -414,7 +472,7 @@ export function App() {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [search, category, reloadKey]);
+  }, [search, category, reloadKey, user]);
 
   function handleSaved() {
     setItemModal(null);
@@ -444,6 +502,8 @@ export function App() {
     [items],
   );
 
+  if (!user) return <LoginScreen onAuthenticated={setUser} />;
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -454,6 +514,7 @@ export function App() {
           <button onClick={() => setRestockOpen(true)} type="button"><Icon name="clock" />Restock</button>
         </nav>
         <div className="sidebar-tip"><small>THE PRINCIPLE</small><p>Know what you own.<br />Buy only what you need.</p></div>
+        <div className="account-panel"><small>{user.role} account</small><span>{user.email}</span><button onClick={logout} type="button">Sign out</button></div>
       </aside>
 
       <main className="content" id="inventory">

@@ -44,6 +44,7 @@ Upload one product photo and review the structured English suggestions before sa
 - **Restock queue** — set a threshold for each item and see what needs attention.
 - **Quick stock updates** — add one unit directly from the restock view.
 - **Persistent data** — store inventory and purchase evaluations in PostgreSQL.
+- **Private accounts** — protect team and judge inventories with Argon2 password hashes and expiring access tokens.
 - **English editorial interface** — present a focused experience for an international audience.
 - **Reproducible environment** — run the React frontend, FastAPI backend, and PostgreSQL database with Docker Compose.
 
@@ -85,7 +86,7 @@ The highest-scoring inventory item becomes the closest match. STOW returns its s
 ```mermaid
 flowchart TD
     A[React and Vite] -->|REST API| B[FastAPI]
-    B --> C[(PostgreSQL)]
+    B --> C[(PostgreSQL users and inventory)]
     B --> D[Similarity service]
     B -->|Server-side request| E[Gemini API]
 ```
@@ -154,6 +155,13 @@ Open `.env` and replace the placeholder with your own key:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-3.5-flash-lite
+JWT_SECRET=replace_with_a_random_secret_of_at_least_32_characters
+```
+
+Generate a strong JWT secret in PowerShell with:
+
+```powershell
+[Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Maximum 256 }))
 ```
 
 Never commit `.env` or a real API key. The tracked `.env.example` contains placeholders only.
@@ -163,6 +171,15 @@ Never commit `.env` or a real API key. The tracked `.env.example` contains place
 ```bash
 docker compose up --build
 ```
+
+In a second terminal, create the two invited accounts. Passwords are entered through a hidden prompt and only Argon2 hashes are stored in PostgreSQL:
+
+```bash
+docker compose exec backend python -m app.create_user --email team@stow.demo --role team
+docker compose exec backend python -m app.create_user --email judge@stow.demo --role judge
+```
+
+Do not put account passwords in `.env`, source code, commits, the README, or the public Devpost page. Share the judge credentials privately with the organizers.
 
 Open:
 
@@ -186,7 +203,7 @@ With the Docker services running:
 docker compose exec backend pytest -v
 ```
 
-Current result: **9 tests passed**. The suite covers image-upload validation, inventory CRUD, required-field validation, purchase evaluation, and all three recommendation bands.
+The suite covers authentication, protected routes, image-upload validation, inventory CRUD, required-field validation, purchase evaluation, and all three recommendation bands.
 
 Build the frontend for production:
 
@@ -199,6 +216,8 @@ docker compose exec frontend npm run build
 | Method | Endpoint | Purpose |
 |---|---|---|
 | `GET` | `/health` | Check API availability |
+| `POST` | `/auth/login` | Sign in and receive an expiring access token |
+| `GET` | `/auth/me` | Read the authenticated account |
 | `GET` | `/items` | List, search, and filter inventory |
 | `POST` | `/items` | Create an inventory item |
 | `GET` | `/items/{item_id}` | Retrieve one item |
@@ -230,6 +249,7 @@ STOW was built during FirstCommit through focused feature branches, meaningful c
 - Reworking the product into a fully English editorial interface
 - Adding configurable restock thresholds and quick stock updates
 - Integrating server-side Gemini image analysis with structured output
+- Adding database-backed team and judge accounts with Argon2 password hashing
 - Protecting secrets with local environment configuration
 - Expanding the backend suite to nine passing tests
 
