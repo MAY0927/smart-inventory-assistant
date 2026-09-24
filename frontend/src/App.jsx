@@ -7,7 +7,7 @@ import {
   evaluatePurchase,
   fetchItems,
   login,
-  setAccessToken,
+  logout as logoutSession,
   updateItem,
 } from "./api";
 import "./styles.css";
@@ -444,7 +444,7 @@ export function App() {
   const [reloadKey, setReloadKey] = useState(0);
 
   function logout() {
-    setAccessToken("");
+    logoutSession().catch(() => {});
     sessionStorage.removeItem("stow_user");
     setUser(null);
     setItems([]);

@@ -22,11 +22,14 @@ def test_login_and_read_current_user() -> None:
         response = client.post("/auth/login", json={"email": email, "password": password})
         assert response.status_code == 200
         data = response.json()
-        me = client.get("/auth/me", headers={"Authorization": f"Bearer {data['access_token']}"})
+        assert "access_token" not in data
+        me = client.get("/auth/me")
         assert me.status_code == 200
         assert me.json()["email"] == email
         assert me.json()["role"] == "judge"
         assert client.post("/auth/login", json={"email": email, "password": "wrong-password"}).status_code == 401
+        assert client.post("/auth/logout").status_code == 204
+        assert client.get("/auth/me").status_code == 401
     finally:
         with SessionLocal() as db:
             user = db.get(User, user_id)

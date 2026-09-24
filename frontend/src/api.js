@@ -1,18 +1,15 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-let accessToken = sessionStorage.getItem("stow_access_token") || "";
 
-export function setAccessToken(token) {
-  accessToken = token || "";
-  if (accessToken) sessionStorage.setItem("stow_access_token", accessToken);
-  else sessionStorage.removeItem("stow_access_token");
-}
-
-function authHeaders(extra = {}) {
-  return { ...extra, ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) };
-}
+// Remove tokens from the pre-cookie version after an upgrade. Authentication
+// is now carried by an HttpOnly cookie and is never readable by page scripts.
+sessionStorage.removeItem("stow_access_token");
 
 async function request(url, options = {}) {
-  const response = await fetch(url, { ...options, headers: authHeaders(options.headers) });
+  const response = await fetch(url, {
+    ...options,
+    credentials: "include",
+    headers: options.headers,
+  });
   if (response.status === 401) window.dispatchEvent(new Event("stow:unauthorized"));
   return response;
 }
@@ -21,12 +18,19 @@ export async function login(email, password) {
   const response = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ email, password }),
   });
   if (!response.ok) throw new Error("Incorrect email or password.");
   const data = await response.json();
-  setAccessToken(data.access_token);
   return data.user;
+}
+
+export async function logout() {
+  await fetch(`${API_URL}/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
 }
 
 export async function fetchItems({ search = "", category = "all", signal } = {}) {

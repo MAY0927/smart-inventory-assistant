@@ -80,8 +80,8 @@ Most importantly, we learned to test the product as a complete user journey. Imp
 
 ## What's next for STOW
 
-- Add authentication and separate inventories for multiple users
-- Add rate limiting and further production safeguards
+- Move rate limiting to a shared store for multi-replica deployments
+- Add observability, backups, and further production safeguards
 - Expand categories, including a dedicated Beauty category
 - Add usage history and predicted depletion dates
 - Provide optional user-controlled image storage

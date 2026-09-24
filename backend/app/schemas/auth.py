@@ -11,6 +11,4 @@ class UserRead(BaseModel):
     role: str
 
 class LoginResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
     user: UserRead

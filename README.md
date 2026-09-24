@@ -44,7 +44,7 @@ Upload one product photo and review the structured English suggestions before sa
 - **Restock queue** — set a threshold for each item and see what needs attention.
 - **Quick stock updates** — add one unit directly from the restock view.
 - **Persistent data** — store inventory and purchase evaluations in PostgreSQL.
-- **Private accounts** — protect team and judge inventories with Argon2 password hashes and expiring access tokens.
+- **Private accounts** — protect team and judge inventories with Argon2 password hashes and expiring HttpOnly session cookies.
 - **English editorial interface** — present a focused experience for an international audience.
 - **Reproducible environment** — run the React frontend, FastAPI backend, and PostgreSQL database with Docker Compose.
 
@@ -136,26 +136,34 @@ git clone https://github.com/MAY0927/smart-inventory-assistant.git
 cd smart-inventory-assistant
 ```
 
-### 2. Create the local environment file
+### 2. Create the environment file
 
 macOS or Linux:
 
 ```bash
-cp .env.example .env
+cp .env.dev.example .env
 ```
 
 Windows PowerShell:
 
 ```powershell
-Copy-Item .env.example .env
+Copy-Item .env.dev.example .env
 ```
 
-Open `.env` and replace the placeholder with your own key:
+For local development, `.env` only needs the optional Gemini key. The development Compose file supplies safe-to-use local defaults; do not use those defaults for a public deployment.
+
+For production, start from `.env.example` instead, fill every required value, and replace the placeholders with unique secrets and your real HTTPS domains:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-3.5-flash-lite
-JWT_SECRET=replace_with_a_random_secret_of_at_least_32_characters
+JWT_SECRET=replace_with_at_least_32_random_characters
+POSTGRES_PASSWORD=replace_with_a_long_random_database_password
+DATABASE_URL=postgresql+psycopg://inventory_user:replace_with_a_long_random_database_password@db:5432/smart_inventory
+VITE_API_URL=https://api.example.com
+CORS_ORIGINS=https://inventory.example.com
+ALLOWED_HOSTS=api.example.com
+COOKIE_SECURE=true
 ```
 
 Generate a strong JWT secret in PowerShell with:
@@ -164,51 +172,63 @@ Generate a strong JWT secret in PowerShell with:
 [Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Maximum 256 }))
 ```
 
-Never commit `.env` or a real API key. The tracked `.env.example` contains placeholders only.
+Never commit `.env` or a real API key. Keep the deployment `.env` readable only by the service account, for example with `chmod 600 .env`.
 
 ### 3. Start the application
 
+For local development with hot reload:
+
 ```bash
-docker compose up --build
+docker compose -f docker-compose.dev.yml up --build
 ```
 
 In a second terminal, create the two invited accounts. Passwords are entered through a hidden prompt and only Argon2 hashes are stored in PostgreSQL:
 
 ```bash
-docker compose exec backend python -m app.create_user --email team@stow.demo --role team
-docker compose exec backend python -m app.create_user --email judge@stow.demo --role judge
+docker compose -f docker-compose.dev.yml exec backend python -m app.create_user --email team@stow.demo --role team
+docker compose -f docker-compose.dev.yml exec backend python -m app.create_user --email judge@stow.demo --role judge
 ```
 
 Do not put account passwords in `.env`, source code, commits, the README, or the public Devpost page. Share the judge credentials privately with the organizers.
 
-Open:
+Open the local development stack:
 
 - Frontend: [http://localhost:5173](http://localhost:5173)
 - API documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
 - Health check: [http://localhost:8000/health](http://localhost:8000/health)
 
-Stop the stack with:
+Stop the development stack with:
 
 ```bash
-docker compose down
+docker compose -f docker-compose.dev.yml down
 ```
 
 If a port is already allocated, stop the older Compose project before starting this one.
 
-## Test
+### Production deployment
 
-With the Docker services running:
+The default `docker-compose.yml` uses a non-reload backend, a non-root backend image, a static frontend image, required secrets, and loopback-only published ports. Put an HTTPS reverse proxy in front of the frontend and API, then run:
 
 ```bash
-docker compose exec backend pytest -v
+docker compose up --build -d
+```
+
+The database is intentionally not published to the host. The API and frontend ports are bound to `127.0.0.1` so only the reverse proxy on the same machine can reach them. Set `VITE_API_URL`, `CORS_ORIGINS`, and `ALLOWED_HOSTS` to the actual HTTPS/API domains before building.
+
+## Test
+
+With the development Docker services running:
+
+```bash
+docker compose -f docker-compose.dev.yml exec backend pytest -v
 ```
 
 The suite covers authentication, protected routes, image-upload validation, inventory CRUD, required-field validation, purchase evaluation, and all three recommendation bands.
 
-Build the frontend for production:
+Build the production frontend image:
 
 ```bash
-docker compose exec frontend npm run build
+docker compose build frontend
 ```
 
 ## API overview
@@ -216,7 +236,8 @@ docker compose exec frontend npm run build
 | Method | Endpoint | Purpose |
 |---|---|---|
 | `GET` | `/health` | Check API availability |
-| `POST` | `/auth/login` | Sign in and receive an expiring access token |
+| `POST` | `/auth/login` | Sign in and receive an HttpOnly session cookie |
+| `POST` | `/auth/logout` | Clear the session cookie |
 | `GET` | `/auth/me` | Read the authenticated account |
 | `GET` | `/items` | List, search, and filter inventory |
 | `POST` | `/items` | Create an inventory item |
@@ -287,8 +308,7 @@ All product screenshots and project-specific code in this repository were create
 
 ## Roadmap
 
-- Authentication and separate inventories for multiple users
-- Rate limiting and additional production safeguards
+- Shared-store rate limiting and additional production safeguards
 - Optional image storage controlled by the user
 - More inventory categories, including Beauty
 - Usage history and predicted depletion dates
