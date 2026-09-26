@@ -33,9 +33,9 @@ def create_item(payload: ItemCreate, db: Session = Depends(get_db), user: User =
 
 @router.get("", response_model=list[ItemRead])
 def list_items(
-    category: str | None = None,
-    search: str | None = None,
-    offset: int = Query(default=0, ge=0),
+    category: str | None = Query(default=None, max_length=50),
+    search: str | None = Query(default=None, max_length=100),
+    offset: int = Query(default=0, ge=0, le=100_000),
     limit: int = Query(default=50, ge=1, le=100),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -45,7 +45,8 @@ def list_items(
     if category:
         query = query.where(Item.category == category)
     if search:
-        query = query.where(Item.name.ilike(f"%{search}%"))
+        escaped_search = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        query = query.where(Item.name.ilike(f"%{escaped_search}%", escape="\\"))
 
     return list(
         db.scalars(query.order_by(Item.created_at.desc()).offset(offset).limit(limit))

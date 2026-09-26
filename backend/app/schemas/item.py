@@ -2,7 +2,9 @@ from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.schemas.validation import validate_flat_attributes
 
 
 class ItemBase(BaseModel):
@@ -14,6 +16,8 @@ class ItemBase(BaseModel):
     image_url: str | None = Field(default=None, max_length=2048)
     notes: str | None = Field(default=None, max_length=2000)
     attributes: dict[str, Any] = Field(default_factory=dict)
+
+    _validate_attributes = field_validator("attributes")(validate_flat_attributes)
 
 
 class ItemCreate(ItemBase):
@@ -29,6 +33,8 @@ class ItemUpdate(BaseModel):
     image_url: str | None = Field(default=None, max_length=2048)
     notes: str | None = Field(default=None, max_length=2000)
     attributes: dict[str, Any] | None = None
+
+    _validate_attributes = field_validator("attributes")(validate_flat_attributes)
 
     @model_validator(mode="after")
     def reject_null_required_fields(self) -> "ItemUpdate":

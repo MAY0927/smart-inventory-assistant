@@ -39,7 +39,7 @@ async def analyze_inventory_image(image_bytes: bytes, mime_type: str) -> ImageIn
         },
     }
 
-    async with httpx.AsyncClient(timeout=45) as client:
+    async with httpx.AsyncClient(timeout=45, trust_env=False) as client:
         response = await client.post(
             url,
             headers={"x-goog-api-key": api_key},

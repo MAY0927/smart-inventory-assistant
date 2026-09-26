@@ -6,6 +6,7 @@ from app.models.user import User
 from app.security import create_access_token, hash_password
 
 os.environ.setdefault("JWT_SECRET", "test-secret-that-is-longer-than-thirty-two-characters")
+os.environ.setdefault("COOKIE_SECURE", "false")
 
 @pytest.fixture
 def auth_headers():
