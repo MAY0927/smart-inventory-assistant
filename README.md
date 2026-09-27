@@ -2,6 +2,10 @@
 
 > Know what you own. Buy only what you need.
 
+**Live Demo:** https://www.stockmigo.com/
+
+Access is limited to invited accounts. Judge login details are shared privately with the organizers.
+
 STOW is an AI-assisted personal inventory and purchase-decision tool. It helps people remember what they own, add items from a single photo, avoid duplicate purchases, and restock essentials at the right time.
 
 ## The problem
@@ -22,7 +26,7 @@ STOW connects three practical questions in one workflow:
 
 ### Quick Add with Gemini
 
-Upload one product photo and review the structured English suggestions before saving. The uploaded image is analyzed but not stored.
+Upload one product photo and review the structured English suggestions before saving. STOW sends the image to Gemini for analysis without retaining it as an inventory image.
 
 ![STOW Gemini-assisted item intake](docs/screenshots/gemini-quick-add.png)
 
@@ -58,11 +62,13 @@ Quick Add reduces the effort required to create an inventory record:
 4. STOW pre-fills the form and asks the user to review the suggestions.
 5. Only the confirmed form data is saved to PostgreSQL.
 
-The original image is not stored. The Gemini API key is used only by the backend and is loaded from an environment variable; it is never included in frontend code or committed to the repository.
+STOW does not persist the original image in its database or image library. Upload processing may use temporary files; the image is sent to Google Gemini for analysis, so this is not a claim about Google's retention policies. The Gemini API key is loaded from a backend environment variable and is not included in frontend code. Real keys must never be committed to the repository.
 
 ## Explainable Purchase Check
 
 STOW applies a deterministic weighted score so that recommendations remain predictable and auditable.
+
+Each feature receives its full weight for an exact match after trimming whitespace and normalizing case; missing optional attributes contribute zero. Gemini does not calculate this score or choose the recommendation.
 
 | Feature | Weight |
 |---|---:|
@@ -182,14 +188,16 @@ For local development with hot reload:
 docker compose -f docker-compose.dev.yml up --build
 ```
 
-In a second terminal, create the two invited accounts. Passwords are entered through a hidden prompt and only Argon2 hashes are stored in PostgreSQL:
+In a second terminal, create invited accounts using your own email addresses (the addresses below are examples). There is no public registration or default login. Passwords are entered through a hidden prompt and only Argon2 hashes are stored in PostgreSQL:
 
 ```bash
-docker compose -f docker-compose.dev.yml exec backend python -m app.create_user --email team@stow.demo --role team
-docker compose -f docker-compose.dev.yml exec backend python -m app.create_user --email judge@stow.demo --role judge
+docker compose -f docker-compose.dev.yml exec backend python -m app.create_user --email developer@example.com --role team
+docker compose -f docker-compose.dev.yml exec backend python -m app.create_user --email reviewer@example.com --role judge
 ```
 
 Do not put account passwords in `.env`, source code, commits, the README, or the public Devpost page. Share the judge credentials privately with the organizers.
+
+Browser login uses a 60-minute JWT in an HttpOnly cookie, with Secure enabled by default in production and SameSite=Lax by default. Inventory and purchase evaluations are scoped to the signed-in user. The `team` and `judge` roles label accounts; they do not grant different API permissions.
 
 Open the local development stack:
 
@@ -223,7 +231,7 @@ With the development Docker services running:
 docker compose -f docker-compose.dev.yml exec backend pytest -v
 ```
 
-The suite covers authentication, protected routes, image-upload validation, inventory CRUD, required-field validation, purchase evaluation, and all three recommendation bands.
+The current suite contains 11 tests covering authentication and logout, protected routes, unsupported and empty image uploads, inventory CRUD, required-field validation, purchase evaluation, and all three recommendation bands. It does not exercise a live Gemini request or a browser end-to-end flow.
 
 Build the production frontend image:
 
@@ -255,7 +263,7 @@ Each item has its own restock threshold. It enters the Restock queue when:
 quantity <= restock threshold
 ```
 
-The threshold is stored with the item's flexible attributes, allowing users to customize restocking without adding a separate workflow.
+The threshold is stored with the item's flexible attributes and defaults to 1. Restock uses the currently loaded inventory list, including active search/category filters and the API's default limit of 50 items. The **+ Add one** action increments quantity by one. Purchase Check independently compares against all items owned by the signed-in user.
 
 ## Development journey
 

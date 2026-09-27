@@ -25,9 +25,13 @@ STOW connects four parts of the decision:
 3. **Purchase Check** — compare a potential purchase against existing inventory and explain the closest match.
 4. **Restock** — set a threshold for each item and see a focused queue when quantities need attention.
 
-AI suggestions never bypass the user. Gemini only pre-fills the item form, and the user reviews every field before saving. The uploaded image is analyzed but not stored.
+AI suggestions never bypass the user. Gemini only pre-fills the item form, and the user reviews every field before saving. STOW sends the image to Gemini for analysis without retaining it as an inventory image.
 
 Purchase Check is also intentionally explainable. Its deterministic score uses category (30%), color (30%), style (15%), material (15%), and purpose (10%). STOW shows the closest item, the total score, every weighted contribution, and a clear recommendation such as **Skip this one**.
+
+Matching uses exact values after whitespace trimming and case normalization; missing optional attributes contribute zero. Scores of 70–100% mean **Skip this one**, 40–69% mean **Consider first**, and 0–39% mean **Good to consider**. Gemini does not choose these scores or recommendations.
+
+Restock defaults to a threshold of 1 and includes items at or below their threshold from the currently loaded inventory list (including active filters and the default 50-item limit). **+ Add one** increments an item's quantity by one.
 
 ## How we built it
 
@@ -37,9 +41,11 @@ STOW runs as a three-service Docker Compose application:
 - **Python and FastAPI** provide REST endpoints, validation, Gemini integration, and recommendation logic.
 - **PostgreSQL**, **SQLAlchemy**, and **Alembic** provide persistent data and versioned database migrations.
 - **Google Gemini API** analyzes a single JPEG, PNG, or WebP image and returns schema-constrained JSON.
-- **Pytest** verifies upload validation, CRUD behavior, purchase evaluation, and recommendation bands.
+- **Pytest** provides 11 tests covering authentication and logout, protected routes, unsupported and empty uploads, CRUD and field validation, purchase evaluation, and recommendation bands. Live Gemini requests and browser end-to-end flows are not covered by this suite.
 
-The Gemini API key remains on the backend as an environment variable. The public `.env.example` documents the required variable name but contains no real credential. Images are limited to 8 MB, validated before analysis, and not stored.
+The Gemini API key remains on the backend as an environment variable. The public `.env.example` documents the required variable name but contains no real credential. JPEG, PNG, and WebP uploads are limited to 8 MB and checked for MIME type and file signature. STOW does not persist them in its database or image library; processing may use temporary files, and images are sent to Google Gemini. This does not describe Google's retention policies.
+
+Access is invitation-only: accounts are created through a server-side command, with Argon2 password hashes stored in PostgreSQL. Browser authentication uses a 60-minute JWT in an HttpOnly cookie, Secure by default in production and SameSite=Lax by default. Inventory and purchase evaluations belong to the signed-in user; `team` and `judge` are account labels, not different API permission levels. Login details are shared privately with organizers.
 
 We developed STOW through feature branches, focused commits, pull requests, reviews, and merges. This created a visible history of the product growing from a Docker foundation into a tested full-stack application.
 
@@ -103,11 +109,10 @@ Google Gemini is used inside the product to analyze a user-selected image and su
 3. **Show Quick Add:** Upload one product photo, explain the Gemini suggestions, review the fields, and save the item.
 4. **Show Purchase Check:** Describe the yellow dress and reveal the closest existing match, recommendation, and weighted score breakdown.
 5. **Show Restock:** Open the queue, explain the per-item threshold, and use **+ Add one**.
-6. **Explain the stack:** Briefly show React, FastAPI, PostgreSQL, Docker Compose, Gemini, and the nine passing tests.
+6. **Explain the stack:** Briefly show React, FastAPI, PostgreSQL, Docker Compose, Gemini, and the current backend test suite.
 7. **Close:** “STOW helps you remember what you own, avoid unnecessary purchases, and restock only what you actually need.”
 
 ## Submission links
 
 - Source code: https://github.com/MAY0927/smart-inventory-assistant
-- Live demo: Add the production URL after deployment
-- Demo video: Add the public video URL before submitting
+- Live demo: https://www.stockmigo.com/
